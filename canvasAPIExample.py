@@ -1,24 +1,36 @@
+#!/usr/bin/python3
+ 
+# Import the required libraries to work with JSON
 import requests
 import json
 
-token = "<Insert custom token here>"
-api = "https://keene.instructure.com/api/v1/"
-headers = {'Authorization' : 'Bearer ' + '%s' % token}
+# Information that will be needed for GET request
+# Typically these would be loaded in from a config file
+token = '<TOKEN-FROM-CANVAS>' # Obtained through OAuth2 in real-world application
+base_url = 'https://keene.instructure.com/api/v1/'
 
-url = api + 'courses?enrollment_state=active'
 
-results = requests.get(url, headers=headers)
+headers = {'Authorization': f'Bearer { token }'}
+
+# Function to generate the final endpoint
+def endpoint(ep):
+    return f'{ base_url }{ ep }'
+
+# Make the get request to the API with the appropriate headers
+results = requests.get(endpoint('courses'), headers=headers)
+
+# Get the text from the response body
 response = results.text
 
+# Format returned JSON into array of dictionaries
 values = json.loads(response)
 
-myCourse = input("Enter Course Name: ")
-
+myCourse = input('Enter Course Name: ')
 for course in values:
-    if 'name' in course and course['name'] == myCourse:
-        assignments = requests.get('https://keene.instructure.com/api/v1/courses/' + str(course['id']) + '/assignments',
-                                    headers=headers)
-        jsonAssignments = json.loads(assignments.text)
-        for assignment in jsonAssignments:
+    # myCourse is cast to str (from input())
+    if course.get('name', 0) == myCourse:
+        resp = requests.get(endpoint('courses/%i/assignments' % course['id']), headers=headers)
+        assignments = json.loads(resp.text)
+        for assignment in assignments:
             if assignment['published']:
                 print(assignment['name'] + "=> " + str(assignment['due_at']))
